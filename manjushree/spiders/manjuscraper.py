@@ -8,6 +8,7 @@ class ManjuscraperSpider(scrapy.Spider):
     detailLinkSet = set()
     reportLinks = set()
     branchLink = set()
+    teamLinks = set()
     visitedLinks = set()
 
     def parse(self, response):
@@ -22,21 +23,28 @@ class ManjuscraperSpider(scrapy.Spider):
                     self.reportLinks.add(link_url)
                 if 'branch' in link_url:
                     self.branchLink.add(link_url)
+                if 'team' in link_url:
+                    self.teamLinks.add(link_url)
 
-        ## working for details category site
+        ## for /detail : 
         for link in self.detailLinkSet:
             self.visitedLinks.add(link)
             yield response.follow(link, callback=self.parse_detail)
         
-        ## for branch : working
+        ## for /branch : working
         for link in self.branchLink:
             self.visitedLinks.add(link)
             yield response.follow(link, callback=self.parse_branch)
         
-        ## for reports category : working
+        ## for /reports category : working
         for link in self.reportLinks:
             self.visitedLinks.add(link)
             yield response.follow(link, callback=self.parse_report)
+
+        ## for /team : working
+        for link in self.teamLinks:
+            self.visitedLinks.add(link)
+            yield response.follow(link, callback=self.parse_team)
 
     def extract_text_recursive(self, selector):
         # Extract text from the element and its children
@@ -114,4 +122,21 @@ class ManjuscraperSpider(scrapy.Spider):
         yield {
             'Page Source' : response.url,
             'Content' : '\n'.join(reports)
+        }
+
+    def parse_team(self, response):
+        title = response.xpath('//h1[@class="page-title"]/text()').get()
+        people = response.xpath('//div[@class="teambox"]')
+        details = []
+        for person in people:
+            image_src = person.xpath('.//img').xpath('@src').get()
+            detail = self.extract_text_recursive(person)
+            temp = f'Person Image Link : {image_src}\nPerson Detail:\n{detail.strip()}'
+            details.append(temp)
+        details = "\n".join(details)
+        pageContent = f'{title}\n{details}'
+
+        yield {
+            'Page Source' : response.url,
+            'Content' : pageContent
         }
