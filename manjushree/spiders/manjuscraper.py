@@ -9,6 +9,7 @@ class ManjuscraperSpider(scrapy.Spider):
     reportLinks = set()
     branchLink = set()
     teamLinks = set()
+    rateLinks = set()
     visitedLinks = set()
 
     def parse(self, response):
@@ -25,6 +26,8 @@ class ManjuscraperSpider(scrapy.Spider):
                     self.branchLink.add(link_url)
                 if 'team' in link_url:
                     self.teamLinks.add(link_url)
+                if 'rates' in link_url:
+                    self.rateLinks.add(link_url)
 
         ## for /detail : 
         for link in self.detailLinkSet:
@@ -45,6 +48,11 @@ class ManjuscraperSpider(scrapy.Spider):
         for link in self.teamLinks:
             self.visitedLinks.add(link)
             yield response.follow(link, callback=self.parse_team)
+
+        ## for /rates : working on it : Kaustuv working on it
+        for link in self.rateLinks:
+            self.visitedLinks.add(link)
+            yield response.follow(link, callback=self.parse_rate)
 
     def extract_text_recursive(self, selector):
         # Extract text from the element and its children
@@ -140,3 +148,17 @@ class ManjuscraperSpider(scrapy.Spider):
             'Page Source' : response.url,
             'Content' : pageContent
         }
+
+    def parse_rate(self, response):
+        # not working properly yet
+        if 'fee-and-charges' in response.url:
+            title = response.xpath('//h1[@class="page-title"]/text()').get()
+            tableContainer = response.xpath('//div[@class="editor-box"]/*')
+            for prollytable in tableContainer:
+                tableExists = prollytable.xpath('.//table[contains(@class,"table table-striped")]')
+                if tableExists:
+                    print('\n\nMil gaya maa\n\n')
+                else:
+                    pass
+            print(f'\n\n{title}\n\n{len(tableContainer)}\n\n')
+        pass
