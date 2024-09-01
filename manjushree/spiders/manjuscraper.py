@@ -18,15 +18,15 @@ class ManjuscraperSpider(scrapy.Spider):
             link_url = link.get()
             if self.start_urls[0] in link_url and 'uploads' not in link_url:
                 self.linkSet.add(link_url)
-                if 'detail' in link_url:
+                if '/detail' in link_url:
                     self.detailLinkSet.add(link_url)
-                if 'reports' in link_url:
+                if '/reports' in link_url:
                     self.reportLinks.add(link_url)
-                if 'branch' in link_url:
+                if '/branch' in link_url:
                     self.branchLink.add(link_url)
-                if 'team' in link_url:
+                if '/team' in link_url:
                     self.teamLinks.add(link_url)
-                if 'rates' in link_url:
+                if '/rates' in link_url:
                     self.rateLinks.add(link_url)
 
         ## for /detail : 
@@ -49,7 +49,7 @@ class ManjuscraperSpider(scrapy.Spider):
             self.visitedLinks.add(link)
             yield response.follow(link, callback=self.parse_team)
 
-        ## for /rates : working on it : Kaustuv working on it
+        ## for /rates : working
         for link in self.rateLinks:
             self.visitedLinks.add(link)
             yield response.follow(link, callback=self.parse_rate)
@@ -57,7 +57,7 @@ class ManjuscraperSpider(scrapy.Spider):
     def extract_text_recursive(self, selector):
         # Extract text from the element and its children
         text_parts = selector.xpath('.//text()').getall()
-        combined_text = ''.join(text_parts).strip()
+        combined_text = ' '.join(text_parts).strip()
         return combined_text
 
 
@@ -150,15 +150,44 @@ class ManjuscraperSpider(scrapy.Spider):
         }
 
     def parse_rate(self, response):
-        # not working properly yet
-        if 'fee-and-charges' in response.url:
+        # /rates working for 3 pages
+        if 'base-and-spread-rate' not in response.url:
             title = response.xpath('//h1[@class="page-title"]/text()').get()
-            tableContainer = response.xpath('//div[@class="editor-box"]/*')
+            tableContainer = response.xpath('//div[@class="editor-box"]//table')
+            tablesContent = []
             for prollytable in tableContainer:
-                tableExists = prollytable.xpath('.//table[contains(@class,"table table-striped")]')
-                if tableExists:
-                    print('\n\nMil gaya maa\n\n')
-                else:
-                    pass
-            print(f'\n\n{title}\n\n{len(tableContainer)}\n\n')
-        pass
+                tableContent=[] 
+                rows = prollytable.xpath('./tbody/tr')
+                for row in rows:
+                    valueSelector = row.xpath('./td')
+                    val = ' '.join(self.extract_text_recursive(valueSelector).split())
+                    tableContent.append(val)
+                tableContent = '\n'.join(tableContent)
+                tablesContent.append(tableContent)
+            tablesContent = '\n\n'.join(tablesContent)
+            pageContent = f'{title}\n{tablesContent}'
+            yield {
+                'Page Source' : response.url,
+                'Content' : pageContent
+            }
+        else:
+            title = response.xpath('//div[@class="editor-box"]/h2/text()').get()
+            cardContainer = response.xpath('//div[@id="accordion"]/div')
+            tablesContent = []
+            for card in cardContainer:
+                year = card.xpath('./div[@class="card-header"]/h5/button/text()').get()
+                tableRows = card.xpath('.//div[@class="card-body"]//table/tbody/tr')
+                tableContent = []
+                for row in tableRows:
+                    valueSelector = row.xpath('./td')
+                    val = ' '.join(self.extract_text_recursive(valueSelector).split())
+                    tableContent.append(val)
+                tableContent = '\n'.join(tableContent)
+                tablesContent.append(tableContent)
+            tablesContent = '\n\n'.join(tablesContent)
+            pageContent = f'{title}\n{tablesContent}'
+
+            yield {
+                'Page Source' : response.url,
+                'Content' : pageContent
+            }
