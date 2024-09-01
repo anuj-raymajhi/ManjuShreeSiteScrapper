@@ -10,6 +10,7 @@ class ManjuscraperSpider(scrapy.Spider):
     branchLink = set()
     teamLinks = set()
     rateLinks = set()
+    pageLinks = set()
     visitedLinks = set()
 
     def parse(self, response):
@@ -28,6 +29,8 @@ class ManjuscraperSpider(scrapy.Spider):
                     self.teamLinks.add(link_url)
                 if '/rates' in link_url:
                     self.rateLinks.add(link_url)
+                if '/page' in link_url:
+                    self.pageLinks.add(link_url)
 
         ## for /detail : 
         for link in self.detailLinkSet:
@@ -53,6 +56,11 @@ class ManjuscraperSpider(scrapy.Spider):
         for link in self.rateLinks:
             self.visitedLinks.add(link)
             yield response.follow(link, callback=self.parse_rate)
+
+        ## for /page : working
+        for link in self.pageLinks:
+            self.visitedLinks.add(link)
+            yield response.follow(link, callback=self.parse_page)
 
     def extract_text_recursive(self, selector):
         # Extract text from the element and its children
@@ -186,6 +194,38 @@ class ManjuscraperSpider(scrapy.Spider):
                 tablesContent.append(tableContent)
             tablesContent = '\n\n'.join(tablesContent)
             pageContent = f'{title}\n{tablesContent}'
+
+            yield {
+                'Page Source' : response.url,
+                'Content' : pageContent
+            }
+
+    def parse_page(self, response):
+        # working for 2 page within /page
+        if 'capital' in response.url:
+            title = response.xpath('//div[@class="editor-box"]/h2/text()').get()
+            tableRows = response.xpath('//div[@class="editor-box"]//table/tbody/tr')
+            tableContent = []
+            for row in tableRows:
+                valueSelector = row.xpath('./td')
+                val = ' '.join(self.extract_text_recursive(valueSelector).split())
+                tableContent.append(val)
+            tableContent = '\n'.join(tableContent)
+            pageContent = f'{title}\n\n{tableContent}'
+
+            yield {
+                'Page Source' : response.url,
+                'Content' : pageContent
+            }
+        else:
+            title = response.xpath('//h1[@class="page-title"]/text()').get()
+            paras = response.xpath('//div[@class="editor-box"]/p')
+            parasContent = []
+            for para in paras:
+                p = self.extract_text_recursive(para)
+                parasContent.append(p)
+            parasContent = '\n'.join(parasContent)
+            pageContent = f'{title}\n\{parasContent}'
 
             yield {
                 'Page Source' : response.url,
