@@ -11,6 +11,7 @@ class ManjuscraperSpider(scrapy.Spider):
     teamLinks = set()
     rateLinks = set()
     pageLinks = set()
+    downloadsLink = set()
     visitedLinks = set()
 
     def parse(self, response):
@@ -31,36 +32,43 @@ class ManjuscraperSpider(scrapy.Spider):
                     self.rateLinks.add(link_url)
                 if '/page' in link_url:
                     self.pageLinks.add(link_url)
+                if '/downloads' in link_url:
+                    self.downloadsLink.add(link_url)
 
-        ## for /detail : 
-        for link in self.detailLinkSet:
-            self.visitedLinks.add(link)
-            yield response.follow(link, callback=self.parse_detail)
+        # ## for /detail : 
+        # for link in self.detailLinkSet:
+        #     self.visitedLinks.add(link)
+        #     yield response.follow(link, callback=self.parse_detail)
         
-        ## for /branch : working
-        for link in self.branchLink:
-            self.visitedLinks.add(link)
-            yield response.follow(link, callback=self.parse_branch)
+        # ## for /branch : working
+        # for link in self.branchLink:
+        #     self.visitedLinks.add(link)
+        #     yield response.follow(link, callback=self.parse_branch)
         
-        ## for /reports category : working
-        for link in self.reportLinks:
-            self.visitedLinks.add(link)
-            yield response.follow(link, callback=self.parse_report)
+        # ## for /reports category : working
+        # for link in self.reportLinks:
+        #     self.visitedLinks.add(link)
+        #     yield response.follow(link, callback=self.parse_report)
 
-        ## for /team : working
-        for link in self.teamLinks:
-            self.visitedLinks.add(link)
-            yield response.follow(link, callback=self.parse_team)
+        # ## for /team : working
+        # for link in self.teamLinks:
+        #     self.visitedLinks.add(link)
+        #     yield response.follow(link, callback=self.parse_team)
 
-        ## for /rates : working
-        for link in self.rateLinks:
-            self.visitedLinks.add(link)
-            yield response.follow(link, callback=self.parse_rate)
+        # ## for /rates : working
+        # for link in self.rateLinks:
+        #     self.visitedLinks.add(link)
+        #     yield response.follow(link, callback=self.parse_rate)
 
-        ## for /page : working
-        for link in self.pageLinks:
+        # ## for /page : working
+        # for link in self.pageLinks:
+        #     self.visitedLinks.add(link)
+        #     yield response.follow(link, callback=self.parse_page)
+
+        ## for /downloads : working
+        for link in self.downloadsLink:
             self.visitedLinks.add(link)
-            yield response.follow(link, callback=self.parse_page)
+            yield response.follow(link, callback=self.parse_downloads)
 
     def extract_text_recursive(self, selector):
         # Extract text from the element and its children
@@ -231,3 +239,45 @@ class ManjuscraperSpider(scrapy.Spider):
                 'Page Source' : response.url,
                 'Content' : pageContent
             }
+    
+    def parse_downloads(self, response):
+        # working for /downloads
+        title = response.xpath('//h1[@class="page-title"]/text()').get()
+        reportSection = response.xpath('//div[@class="section report-list"]/div/div')
+        sectionIterator = []
+        sectionNames = []
+        sectionDivs = []
+        sectionCount = 0
+        totalSecs = len(reportSection)-1
+        for i,section in enumerate(reportSection):
+            class_attr = section.css('::attr(class)').get()
+            if class_attr == 'col-md-12':
+                if sectionCount > 0:
+                    sectionIterator.append(sectionDivs)
+                    sectionDivs = []
+                sectionNames.append(section.xpath('./h3/text()').get())
+                sectionCount += 1
+            else:
+                sectionDivs.append(section)
+            if i == totalSecs:
+                sectionIterator.append(sectionDivs)
+                del sectionDivs
+        sectionsContent = []
+        for i,section in enumerate(sectionIterator):
+            sectionName = ''.join(sectionNames[i].strip().split())
+            sectionContent = [f'Download link for {sectionName}']
+            for div in section:
+                divName = div.xpath('.//span[@class="main-title"]/text()').get()
+                divName = ' '.join(divName.strip().split())
+                downloadLink = div.xpath('.//a').xpath('@href').get()
+                content = f'Document : {divName}\nDownload Link : {downloadLink}'
+                sectionContent.append(content)
+            sectionContent = '\n'.join(sectionContent)
+            sectionsContent.append(sectionContent)
+        sectionsContent = '\n\n'.join(sectionsContent)
+        pageContent = f'{title}\n\n{sectionsContent}'
+
+        yield {
+            'Page Source' : response.url,
+            'Content' : pageContent
+        }
