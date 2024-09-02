@@ -35,35 +35,35 @@ class ManjuscraperSpider(scrapy.Spider):
                 if '/downloads' in link_url:
                     self.downloadsLink.add(link_url)
 
-        # ## for /detail : 
-        # for link in self.detailLinkSet:
-        #     self.visitedLinks.add(link)
-        #     yield response.follow(link, callback=self.parse_detail)
+        ## for /detail : 
+        for link in self.detailLinkSet:
+            self.visitedLinks.add(link)
+            yield response.follow(link, callback=self.parse_detail)
         
-        # ## for /branch : working
-        # for link in self.branchLink:
-        #     self.visitedLinks.add(link)
-        #     yield response.follow(link, callback=self.parse_branch)
+        ## for /branch : working
+        for link in self.branchLink:
+            self.visitedLinks.add(link)
+            yield response.follow(link, callback=self.parse_branch)
         
-        # ## for /reports category : working
-        # for link in self.reportLinks:
-        #     self.visitedLinks.add(link)
-        #     yield response.follow(link, callback=self.parse_report)
+        ## for /reports category : working
+        for link in self.reportLinks:
+            self.visitedLinks.add(link)
+            yield response.follow(link, callback=self.parse_report)
 
-        # ## for /team : working
-        # for link in self.teamLinks:
-        #     self.visitedLinks.add(link)
-        #     yield response.follow(link, callback=self.parse_team)
+        ## for /team : working
+        for link in self.teamLinks:
+            self.visitedLinks.add(link)
+            yield response.follow(link, callback=self.parse_team)
 
-        # ## for /rates : working
-        # for link in self.rateLinks:
-        #     self.visitedLinks.add(link)
-        #     yield response.follow(link, callback=self.parse_rate)
+        ## for /rates : working
+        for link in self.rateLinks:
+            self.visitedLinks.add(link)
+            yield response.follow(link, callback=self.parse_rate)
 
-        # ## for /page : working
-        # for link in self.pageLinks:
-        #     self.visitedLinks.add(link)
-        #     yield response.follow(link, callback=self.parse_page)
+        ## for /page : working
+        for link in self.pageLinks:
+            self.visitedLinks.add(link)
+            yield response.follow(link, callback=self.parse_page)
 
         ## for /downloads : working
         for link in self.downloadsLink:
