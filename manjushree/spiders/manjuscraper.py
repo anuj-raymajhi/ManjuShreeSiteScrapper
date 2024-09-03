@@ -14,6 +14,9 @@ class ManjuscraperSpider(scrapy.Spider):
     downloadsLink = set()
     menuSites = ['/other-services','/products','/loan','/digital-banking','/deposit']
     menuLinks = set()
+    videoLink = set()
+    contactLink = set()
+    atmLink = set()
     visitedLinks = set()
 
     def parse(self, response):
@@ -39,47 +42,54 @@ class ManjuscraperSpider(scrapy.Spider):
                 for menuPage in self.menuSites:
                     if menuPage in link_url:
                         self.menuLinks.add(link_url)
+                if '/video-tutorial' in link_url:
+                    self.videoLink.add(link_url)
 
 
-        ## for /detail : 
-        # for link in self.detailLinkSet:
-        #     self.visitedLinks.add(link)
-        #     yield response.follow(link, callback=self.parse_detail)
+        # for /detail : 
+        for link in self.detailLinkSet:
+            self.visitedLinks.add(link)
+            yield response.follow(link, callback=self.parse_detail)
         
-        # ## for /branch : working
-        # for link in self.branchLink:
-        #     self.visitedLinks.add(link)
-        #     yield response.follow(link, callback=self.parse_branch)
+        ## for /branch : working
+        for link in self.branchLink:
+            self.visitedLinks.add(link)
+            yield response.follow(link, callback=self.parse_branch)
         
-        # ## for /reports category : working
-        # for link in self.reportLinks:
-        #     self.visitedLinks.add(link)
-        #     yield response.follow(link, callback=self.parse_report)
+        ## for /reports category : working
+        for link in self.reportLinks:
+            self.visitedLinks.add(link)
+            yield response.follow(link, callback=self.parse_report)
 
-        # ## for /team : working
-        # for link in self.teamLinks:
-        #     self.visitedLinks.add(link)
-        #     yield response.follow(link, callback=self.parse_team)
+        ## for /team : working
+        for link in self.teamLinks:
+            self.visitedLinks.add(link)
+            yield response.follow(link, callback=self.parse_team)
 
-        # ## for /rates : working
-        # for link in self.rateLinks:
-        #     self.visitedLinks.add(link)
-        #     yield response.follow(link, callback=self.parse_rate)
+        ## for /rates : working
+        for link in self.rateLinks:
+            self.visitedLinks.add(link)
+            yield response.follow(link, callback=self.parse_rate)
 
-        # ## for /page : working
-        # for link in self.pageLinks:
-        #     self.visitedLinks.add(link)
-        #     yield response.follow(link, callback=self.parse_page)
+        ## for /page : working
+        for link in self.pageLinks:
+            self.visitedLinks.add(link)
+            yield response.follow(link, callback=self.parse_page)
 
-        # ## for /downloads : working
-        # for link in self.downloadsLink:
-        #     self.visitedLinks.add(link)
-        #     yield response.follow(link, callback=self.parse_downloads)
+        ## for /downloads : working
+        for link in self.downloadsLink:
+            self.visitedLinks.add(link)
+            yield response.follow(link, callback=self.parse_downloads)
 
         ## for menu type pages : working
         for link in self.menuLinks:
             self.visitedLinks.add(link)
             yield response.follow(link, callback=self.parse_menu)
+        
+        ## for /video-tutoral page
+        for link in self.videoLink:
+            self.visitedLinks.add(link)
+            yield response.follow(link, callback=self.parse_video_tutorial)
 
     def extract_text_recursive(self, selector):
         # Extract text from the element and its children
@@ -310,6 +320,24 @@ class ManjuscraperSpider(scrapy.Spider):
             menuContent.append(content)
         menuContent = '\n\n'.join(menuContent)
         pageContent = f'Services under category : {title}\n\n{menuContent}'
+        yield {
+            'Page Source' : response.url,
+            'Content' : pageContent
+        }
+
+    def parse_video_tutorial(self, response):
+        title = response.xpath('//h1[@class="page-title"]/text()').get()
+        videoContainer = response.xpath('//div[contains(@class, "video-tutorial-list")]/div')
+        # print(f'\n\n{title}\n\n{len(videoContainer)}\n\n')
+        videoContent = []
+        for video in videoContainer:
+            videoTitle = video.xpath('.//span[contains(@class, "video-title")]/text()').get()
+            videoLink = video.xpath('.//iframe').xpath('@src').get()
+            content = f'Tutorial name : {videoTitle}\nTutorial video link : {videoLink}'
+            videoContent.append(content)
+        videoContent = '\n\n'.join(videoContent)
+        pageContent = f'{title}\n\n{videoContent}'
+
         yield {
             'Page Source' : response.url,
             'Content' : pageContent
