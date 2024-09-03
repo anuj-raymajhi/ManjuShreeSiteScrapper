@@ -12,6 +12,8 @@ class ManjuscraperSpider(scrapy.Spider):
     rateLinks = set()
     pageLinks = set()
     downloadsLink = set()
+    menuSites = ['/other-services','/products','/loan','/digital-banking','/deposit']
+    menuLinks = set()
     visitedLinks = set()
 
     def parse(self, response):
@@ -34,41 +36,50 @@ class ManjuscraperSpider(scrapy.Spider):
                     self.pageLinks.add(link_url)
                 if '/downloads' in link_url:
                     self.downloadsLink.add(link_url)
+                for menuPage in self.menuSites:
+                    if menuPage in link_url:
+                        self.menuLinks.add(link_url)
+
 
         ## for /detail : 
-        for link in self.detailLinkSet:
-            self.visitedLinks.add(link)
-            yield response.follow(link, callback=self.parse_detail)
+        # for link in self.detailLinkSet:
+        #     self.visitedLinks.add(link)
+        #     yield response.follow(link, callback=self.parse_detail)
         
-        ## for /branch : working
-        for link in self.branchLink:
-            self.visitedLinks.add(link)
-            yield response.follow(link, callback=self.parse_branch)
+        # ## for /branch : working
+        # for link in self.branchLink:
+        #     self.visitedLinks.add(link)
+        #     yield response.follow(link, callback=self.parse_branch)
         
-        ## for /reports category : working
-        for link in self.reportLinks:
-            self.visitedLinks.add(link)
-            yield response.follow(link, callback=self.parse_report)
+        # ## for /reports category : working
+        # for link in self.reportLinks:
+        #     self.visitedLinks.add(link)
+        #     yield response.follow(link, callback=self.parse_report)
 
-        ## for /team : working
-        for link in self.teamLinks:
-            self.visitedLinks.add(link)
-            yield response.follow(link, callback=self.parse_team)
+        # ## for /team : working
+        # for link in self.teamLinks:
+        #     self.visitedLinks.add(link)
+        #     yield response.follow(link, callback=self.parse_team)
 
-        ## for /rates : working
-        for link in self.rateLinks:
-            self.visitedLinks.add(link)
-            yield response.follow(link, callback=self.parse_rate)
+        # ## for /rates : working
+        # for link in self.rateLinks:
+        #     self.visitedLinks.add(link)
+        #     yield response.follow(link, callback=self.parse_rate)
 
-        ## for /page : working
-        for link in self.pageLinks:
-            self.visitedLinks.add(link)
-            yield response.follow(link, callback=self.parse_page)
+        # ## for /page : working
+        # for link in self.pageLinks:
+        #     self.visitedLinks.add(link)
+        #     yield response.follow(link, callback=self.parse_page)
 
-        ## for /downloads : working
-        for link in self.downloadsLink:
+        # ## for /downloads : working
+        # for link in self.downloadsLink:
+        #     self.visitedLinks.add(link)
+        #     yield response.follow(link, callback=self.parse_downloads)
+
+        ## for menu type pages : working
+        for link in self.menuLinks:
             self.visitedLinks.add(link)
-            yield response.follow(link, callback=self.parse_downloads)
+            yield response.follow(link, callback=self.parse_menu)
 
     def extract_text_recursive(self, selector):
         # Extract text from the element and its children
@@ -277,6 +288,28 @@ class ManjuscraperSpider(scrapy.Spider):
         sectionsContent = '\n\n'.join(sectionsContent)
         pageContent = f'{title}\n\n{sectionsContent}'
 
+        yield {
+            'Page Source' : response.url,
+            'Content' : pageContent
+        }
+    
+    def parse_menu(self, response):
+        # working parser for 5 type of pages with menu type structure
+
+        title = response.url.replace(f'{self.start_urls[0]}/','')
+        menu = response.xpath('//div[contains(@class, "services-list")]/div')
+        # print(f'\n\n{title}\n\t{len(menu)}')
+        menuContent = []
+        for element in menu:
+            elementLink = element.xpath('./a').xpath('@href').get()
+            elementName = element.xpath('.//span[@class="main-title"]/text()').get()
+            elementDescription = element.xpath('.//span[@class="description"]/text()').get()
+            elementName = ' '.join(elementName.strip().split())
+            elementDescription = ' '.join(elementDescription.strip().split())
+            content = f'Service name : {elementName}\nService Description : {elementDescription}\nService Link : {elementLink}'
+            menuContent.append(content)
+        menuContent = '\n\n'.join(menuContent)
+        pageContent = f'Services under category : {title}\n\n{menuContent}'
         yield {
             'Page Source' : response.url,
             'Content' : pageContent
