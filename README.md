@@ -11,8 +11,8 @@ This project is a web scraping application built with Scrapy to extract data fro
 
 1. Clone this repository:
    ```
-   git clone https://github.com/yourusername/manjushree-scraper.git
-   cd manjushree-scraper
+   git clone https://github.com/nbitOverflow/Cust_Scrape_manjushree
+   cd Cust_Scrape_manjushree
    ```
 
 2. (Recommended) Create and activate a virtual environment:
@@ -44,14 +44,4 @@ After running the scraper, you'll find the `ManjuShreeData.csv` file in the proj
 
 To modify the scraper's behavior or target different data, edit the spider file located in `spiders/manjuscraper.py`.
 
-## License
 
-[Include your license information here]
-
-## Contributing
-
-[Include guidelines for contributing to the project]
-
-## Contact
-
-[Your contact information or where to report issues]
