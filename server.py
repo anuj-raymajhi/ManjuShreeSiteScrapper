@@ -23,31 +23,25 @@ llm = ChatGroq(
 )
 
 
-message = """you are a medical field assistant to a doctor, the doctor provides you with a query he receives from the patient and you have to respond to the doctor based on the context provided along the patient query. if the context and the patient query doesn't align, suggest the doctor to recheck the context.
-<rules>
-1. If the query is outside of the medical field, Respond with "I don't know", don't elaborate further!
-2. If the query and the context doesn't align, Respond with "I don't know", don't elaborate further!
-3. If the Query is basic greeting, greet politely and introduce yourself as a doctor's assitant
-</rules>
-Strictly adhere to these rules while answering the query.
-<context>
+message =    """
+    You are a customer service assistant for Manjushree Finance. Your goal is to help customers with their queries by providing accurate, polite, and helpful information based strictly on the company's knowledge base, which includes operations, financial products, policies, and regulations.
+
+    - If the retrieved data does not provide a definitive answer, respond with: "I'm unable to provide a clear answer at the moment. Please feel free to contact our customer support for further assistance."
+    - Always maintain a friendly and professional tone.
+    - Provide relevant URLs or references if applicable, based on the knowledge base.
+    - Avoid assumptions or speculative responses.
+
     {context}
-</context>
-<query>
-    {query}
-</query>
-"""
+
+    Customer Question: {query}
+
+    """
 
 greeting_message = """
-you are a medical field assistant to a doctor. Thus, greet the doctor in polite and professional manner. Ask him to mention his dilema or problem.
+you are a customer service assistant for Manjushree Finance. Thus, greet the customer in polite and professional manner
 """
 
-reform_query = """Given a chat history and the latest user question \
-which might reference context in the chat history, formulate a standalone question \
-which can be understood without the chat history. Do NOT answer the question, \
-just reformulate it if needed and otherwise return it as is.
-Do not provide additonal information in the response.
-"""
+
 
 
 app = FastAPI()
