@@ -44,7 +44,10 @@ class ManjuscraperSpider(scrapy.Spider):
                         self.menuLinks.add(link_url)
                 if '/video-tutorial' in link_url:
                     self.videoLink.add(link_url)
-
+                if '/atm' in link_url:
+                    self.atmLink.add(link_url)
+                if '/contact' in link_url:
+                    self.contactLink.add(link_url)
 
         # for /detail : 
         for link in self.detailLinkSet:
@@ -86,10 +89,20 @@ class ManjuscraperSpider(scrapy.Spider):
             self.visitedLinks.add(link)
             yield response.follow(link, callback=self.parse_menu)
         
-        ## for /video-tutoral page
+        ## for /video-tutoral page : working
         for link in self.videoLink:
             self.visitedLinks.add(link)
             yield response.follow(link, callback=self.parse_video_tutorial)
+
+        ## for /atm page : working
+        for link in self.atmLink:
+            self.visitedLinks.add(link)
+            yield response.follow(link, callback=self.parse_atm)
+
+        ## for /contact page : working
+        for link in self.contactLink:
+            self.visitedLinks.add(link)
+            yield response.follow(link, callback=self.parse_contact)
 
     def extract_text_recursive(self, selector):
         # Extract text from the element and its children
@@ -148,21 +161,21 @@ class ManjuscraperSpider(scrapy.Spider):
     def parse_report(self, response):
         ## accordion -> report date -> view link, download link
         #get accordian container which contains card classes
-        accordionContainer = response.xpath('//*[@id="accordion"]/div')
+        accordionContainer = response.xpath('//*[@id="accordion"]/div[1]')
         
         #iterate through each card and extract: date, redirection link, download link
         reports = []
-        for card in accordionContainer:
-            date = card.xpath('.//div[@class="card-header"]//button/text()').get()
-            linkContainer = card.xpath('.//div[contains(@class, "collapse")]/div/div/div/div') # contains report links in one date value
-            linkContent = []
-            for container in linkContainer:
-                report_name = container.xpath('.//span[@class="main-title"]/text()').get()
-                report_view_link = container.xpath('.//div[@class="item-box"]/a').xpath('@href').get()
-                download_link = container.xpath('.//a[contains(@class, "download-btn")]').xpath('@href').get()
-                linkContent.append(f'{report_name}:\nview link : {report_view_link}\ndownload link : {download_link}')
-            linkContent = '\n\n'.join(linkContent)
-            reports.append(f'{date}\n{linkContent}\n')
+        # for card in accordionContainer:
+        date = accordionContainer.xpath('.//div[@class="card-header"]//button/text()').get()
+        linkContainer = accordionContainer.xpath('.//div[contains(@class, "collapse")]/div/div/div/div') # contains report links in one date value
+        linkContent = []
+        for container in linkContainer:
+            report_name = container.xpath('.//span[@class="main-title"]/text()').get()
+            report_view_link = container.xpath('.//div[@class="item-box"]/a').xpath('@href').get()
+            download_link = container.xpath('.//a[contains(@class, "download-btn")]').xpath('@href').get()
+            linkContent.append(f'{report_name}:\nview link : {report_view_link}\ndownload link : {download_link}')
+        linkContent = '\n\n'.join(linkContent)
+        reports.append(f'{date}\n{linkContent}\n')
         
         yield {
             'Page Source' : response.url,
@@ -188,7 +201,7 @@ class ManjuscraperSpider(scrapy.Spider):
 
     def parse_rate(self, response):
         # /rates working for 3 pages
-        if 'base-and-spread-rate' not in response.url:
+        if 'fee-and-charges' in response.url:
             title = response.xpath('//h1[@class="page-title"]/text()').get()
             tableContainer = response.xpath('//div[@class="editor-box"]//table')
             tablesContent = []
@@ -207,20 +220,38 @@ class ManjuscraperSpider(scrapy.Spider):
                 'Page Source' : response.url,
                 'Content' : pageContent
             }
+        elif 'interest-rate' in response.url:
+            title = response.xpath('//h1[@class="page-title"]/text()').get()
+            tableContainer = response.xpath('//div[@class="editor-box"]//table[1]')
+            tablesContent = []
+            tableContent=[] 
+            rows = tableContainer.xpath('./tbody/tr')
+            for row in rows:
+                valueSelector = row.xpath('./td')
+                val = ' '.join(self.extract_text_recursive(valueSelector).split())
+                tableContent.append(val)
+            tableContent = '\n'.join(tableContent)
+            tablesContent.append(tableContent)
+            tablesContent = '\n\n'.join(tablesContent)
+            pageContent = f'{title}\n{tablesContent}'
+            yield {
+                'Page Source' : response.url,
+                'Content' : pageContent
+            }
         else:
             title = response.xpath('//div[@class="editor-box"]/h2/text()').get()
-            cardContainer = response.xpath('//div[@id="accordion"]/div')
+            cardContainer = response.xpath('//div[@id="accordion"]/div[1]')
             tablesContent = []
-            for card in cardContainer:
-                year = card.xpath('./div[@class="card-header"]/h5/button/text()').get()
-                tableRows = card.xpath('.//div[@class="card-body"]//table/tbody/tr')
-                tableContent = []
-                for row in tableRows:
-                    valueSelector = row.xpath('./td')
-                    val = ' '.join(self.extract_text_recursive(valueSelector).split())
-                    tableContent.append(val)
-                tableContent = '\n'.join(tableContent)
-                tablesContent.append(tableContent)
+            # for card in cardContainer:
+            year = cardContainer.xpath('./div[@class="card-header"]/h5/button/text()').get()
+            tableRows = cardContainer.xpath('.//div[@class="card-body"]//table/tbody/tr')
+            tableContent = []
+            for row in tableRows:
+                valueSelector = row.xpath('./td')
+                val = ' '.join(self.extract_text_recursive(valueSelector).split())
+                tableContent.append(val)
+            tableContent = '\n'.join(tableContent)
+            tablesContent.append(tableContent)
             tablesContent = '\n\n'.join(tablesContent)
             pageContent = f'{title}\n{tablesContent}'
 
@@ -337,6 +368,41 @@ class ManjuscraperSpider(scrapy.Spider):
             videoContent.append(content)
         videoContent = '\n\n'.join(videoContent)
         pageContent = f'{title}\n\n{videoContent}'
+
+        yield {
+            'Page Source' : response.url,
+            'Content' : pageContent
+        }
+    
+    def parse_atm(self, response):
+        title = response.xpath('//h1[@class="page-title"]/text()').get()
+        branchContainer = response.xpath('//div[@id="accordionExample"]/div')
+        branchContent = []
+        for branch in branchContainer:
+            branchName = branch.xpath('.//div[@class="card-header"]//button/text()').get()
+            branchName = ' '.join(branchName.strip().split())
+            branchInfoContainer = branch.xpath('.//div[contains(@class, "card-body")]/div/div')
+            location = branch.xpath('.//div[contains(@class, "card-body")]/div/span/a').xpath('@href').get()
+            inf = []
+            for info in branchInfoContainer:
+                infoTitle = info.xpath('./span[@class="branch-title"]/text()').get()
+                infoDescription = info.xpath('./span[@class="description"]/p/text()').getall()
+                infoDescription = ' '.join(infoDescription)
+                inf.append(f'{infoTitle}\n{infoDescription}')
+            inf = '\n'.append(inf)
+            branchContent.append(f'Branch name : {branchName}\nBranch location : {location}\nBranch Information : {inf}')
+        branchContent = '\n'.join(branchContent)
+        pageContent = f'{title}\n\n{branchContent}'
+
+        yield {
+            'Page Source' : response.url,
+            'Content' : pageContent
+        }
+        
+    def parse_contact(self, response):
+        title = response.xpath('//h1[@class="page-title"]/text()').get()
+        infoContainer = response.xpath('//section[contains(@class, "section home-about general-hour")][1]')
+        pageContent = f'{title}\n\n{self.extract_text_recursive(infoContainer)}'
 
         yield {
             'Page Source' : response.url,
