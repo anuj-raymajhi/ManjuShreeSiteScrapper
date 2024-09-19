@@ -1,5 +1,5 @@
 import scrapy
-
+import time
 class ManjuscraperSpider(scrapy.Spider):
     name = "manjuscraper"
     allowed_domains = ["manjushreefinance.com.np"]
@@ -145,9 +145,10 @@ class ManjuscraperSpider(scrapy.Spider):
             lines = []
             for valuesContainer in branchContent:
                 title = valuesContainer.css('.branch-title::text').getall()
+                descriptionText = valuesContainer.css('.description::text').getall()
                 description = valuesContainer.css('.description p::text').getall()
                 # print(type(title), title)
-                line = ' '.join(''.join(title).strip().split()) + '\n' + '\n'.join(description)
+                line = ' '.join(''.join(title).strip().split()) + '\n' +''.join(descriptionText)+ '\n'.join(description)
                 lines.append(line)
             branchLocation = card.xpath('//div[contains(@class, "collapse")]/div/div/span/a')
             branchLocation = branchLocation.css('::attr(href)').get()
@@ -389,7 +390,7 @@ class ManjuscraperSpider(scrapy.Spider):
                 infoDescription = info.xpath('./span[@class="description"]/p/text()').getall()
                 infoDescription = ' '.join(infoDescription)
                 inf.append(f'{infoTitle}\n{infoDescription}')
-            inf = '\n'.append(inf)
+            inf = '\n'.join(inf)
             branchContent.append(f'Branch name : {branchName}\nBranch location : {location}\nBranch Information : {inf}')
         branchContent = '\n'.join(branchContent)
         pageContent = f'{title}\n\n{branchContent}'
